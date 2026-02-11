@@ -6,7 +6,7 @@ const LANGUAGE = import.meta.env.VITE_LANGUAGE || 'EN'
 
 const translations = {
   EN: {
-    willYouBeMyValentine: (name: string) => `Will you be my Valentine?`,
+    willYouBeMyValentine: () => `Will you be my Valentine?`,
     areYouSure: "You sure about that? 🙂",
     prettyPlease: "Okay… just checking once more 💖",
     wontGiveUp: "Still standing by my question 💖",
