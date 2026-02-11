@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 
-const VALENTINE_NAME = import.meta.env.VITE_VALENTINE_NAME || ' Yashmi '
+const VALENTINE_NAME = import.meta.env.VITE_VALENTINE_NAME || ' Yashmita '
 const LANGUAGE = import.meta.env.VITE_LANGUAGE || 'EN'
 
 const translations = {
@@ -200,7 +200,7 @@ function App() {
   }
 
   const getMessage = () => {
-    if (noAttempts === 0) return t.willYouBeMyValentine(VALENTINE_NAME)
+    if (noAttempts === 0) return t.willYouBeMyValentine()
     if (noAttempts < 3) return t.areYouSure
     if (noAttempts < 6) return t.prettyPlease
     if (noAttempts < 10) return t.wontGiveUp
