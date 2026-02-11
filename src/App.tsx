@@ -1,35 +1,22 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 
-const VALENTINE_NAME = import.meta.env.VITE_VALENTINE_NAME || 'Beautiful'
+const VALENTINE_NAME = import.meta.env.VITE_VALENTINE_NAME || ' Yashmi '
 const LANGUAGE = import.meta.env.VITE_LANGUAGE || 'EN'
 
 const translations = {
   EN: {
-    willYouBeMyValentine: (name: string) => `${name}, will you be my Valentine?`,
-    areYouSure: "Are you sure you want to say no? 🥺",
-    prettyPlease: "Please? Pretty please? 💕",
-    wontGiveUp: "I won't give up on you! 💖",
-    tooShy: "That button is too shy to be clicked! 😜",
-    justSayYes: "Just say YES already! 💘",
-    yes: "Yes! 💕",
+    willYouBeMyValentine: (name: string) => `Will you be my Valentine?`,
+    areYouSure: "You sure about that? 🙂",
+    prettyPlease: "Okay… just checking once more 💖",
+    wontGiveUp: "Still standing by my question 💖",
+    tooShy: "That NO button seems a little shy 😜",
+    justSayYes: "Just say YES already na 💘",
+    yes: "YES 💕",
     no: "No",
     yay: "YAY!",
-    knewYoudSayYes: (name: string) => `I knew you'd say yes, ${name}!`,
-    happiestPerson: "You've made me the happiest person ever! 💕",
-  },
-  DA: {
-    willYouBeMyValentine: (name: string) => `${name}, vil du være min Valentine?`,
-    areYouSure: "Er du sikker på du vil sige nej? 🥺",
-    prettyPlease: "Please? Søde dig? 💕",
-    wontGiveUp: "Jeg giver ikke op! 💖",
-    tooShy: "Den knap er for genert til at blive trykket på! 😜",
-    justSayYes: "Sig bare JA! 💘",
-    yes: "Ja! 💕",
-    no: "Nej",
-    yay: "JUBII!",
-    knewYoudSayYes: (_name: string) => `Jeg vidste du ville sige ja!`,
-    happiestPerson: "TIHI! 💕",
+    knewYoudSayYes: (name: string) => `Shukriya for the YES ❤️ ${name}!`,
+    happiestPerson: "Next time say 'Qubool hai' <3 Anyways Thank you for making my day... Gonna be spending all my life making it up to you  🎀",
   },
 }
 
@@ -64,10 +51,10 @@ function App() {
   const yesButtonRef = useRef<HTMLButtonElement>(null)
   const noButtonRef = useRef<HTMLButtonElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
+  const contentRef = useRef<HTMLDivElement>(null) // White card (envelope) container
   const sparkleId = useRef(0)
-  const lastMoveTime = useRef(0)
 
-  const FLEE_DISTANCE = 120 // Distance at which button starts fleeing
+  const CARD_PADDING = 16 // Padding from white card edges so button stays inside
 
   // Generate floating hearts
   useEffect(() => {
@@ -109,20 +96,26 @@ function App() {
     return () => clearInterval(interval)
   }, [])
 
-  // Initialize No button position next to Yes button
+  // Initialize No button position inside white card, next to Yes button
   useEffect(() => {
     if (!initialized) {
-      // Small delay to ensure Yes button is rendered and has dimensions
       const timer = setTimeout(() => {
-        if (yesButtonRef.current && containerRef.current) {
-          const container = containerRef.current.getBoundingClientRect()
+        if (yesButtonRef.current && contentRef.current && noButtonRef.current) {
+          const contentRect = contentRef.current.getBoundingClientRect()
           const yesRect = yesButtonRef.current.getBoundingClientRect()
+          const noRect = noButtonRef.current.getBoundingClientRect()
+          const noWidth = noRect.width || 80
+          const noHeight = noRect.height || 44
+          const padding = CARD_PADDING
+          const maxX = contentRect.width - noWidth - padding
+          const maxY = contentRect.height - noHeight - padding
 
-          // Position just to the right of the Yes button with a small gap
-          setNoButtonPos({
-            x: yesRect.right - container.left + 20,
-            y: yesRect.top - container.top,
-          })
+          // Start just to the right of Yes button, clamped to card bounds
+          let x = yesRect.right - contentRect.left + 20
+          let y = yesRect.top - contentRect.top
+          x = Math.max(padding, Math.min(maxX, x))
+          y = Math.max(padding, Math.min(maxY, y))
+          setNoButtonPos({ x, y })
           setInitialized(true)
         }
       }, 100)
@@ -130,24 +123,33 @@ function App() {
     }
   }, [initialized])
 
+  // Random position strictly inside the white card (content), avoiding the Yes button
   const getRandomPosition = useCallback((currentMouseX?: number, currentMouseY?: number) => {
-    if (!containerRef.current || !yesButtonRef.current || !noButtonRef.current) {
+    if (!contentRef.current || !yesButtonRef.current || !noButtonRef.current) {
       return noButtonPos
     }
 
-    const container = containerRef.current.getBoundingClientRect()
+    const contentRect = contentRef.current.getBoundingClientRect()
     const yesRect = yesButtonRef.current.getBoundingClientRect()
     const noRect = noButtonRef.current.getBoundingClientRect()
 
-    const padding = 60 // Large padding to ensure button stays well within screen
-    const noWidth = noRect.width || 100
-    const noHeight = noRect.height || 50
+    const padding = CARD_PADDING
+    const noWidth = noRect.width || 80
+    const noHeight = noRect.height || 44
 
-    // Strict bounds to keep button fully on screen with generous margins
+    // Bounds: white card only (content = envelope), button fully inside
     const minX = padding
     const minY = padding
-    const maxX = container.width - noWidth - padding
-    const maxY = container.height - noHeight - padding
+    const maxX = contentRect.width - noWidth - padding
+    const maxY = contentRect.height - noHeight - padding
+
+    if (maxX <= minX || maxY <= minY) return noButtonPos
+
+    // Yes button in content-relative coordinates
+    const yesLeft = yesRect.left - contentRect.left - 20
+    const yesRight = yesRect.right - contentRect.left + 20
+    const yesTop = yesRect.top - contentRect.top - 20
+    const yesBottom = yesRect.bottom - contentRect.top + 20
 
     let attempts = 0
     let newX: number, newY: number
@@ -157,71 +159,40 @@ function App() {
       newY = minY + Math.random() * (maxY - minY)
       attempts++
 
-      // Check overlap with Yes button (with extra margin)
       const noLeft = newX
       const noRight = newX + noWidth
       const noTop = newY
       const noBottom = newY + noHeight
-
-      const yesLeft = yesRect.left - container.left - 30
-      const yesRight = yesRect.right - container.left + 30
-      const yesTop = yesRect.top - container.top - 30
-      const yesBottom = yesRect.bottom - container.top + 30
-
       const overlapsYes = !(noRight < yesLeft || noLeft > yesRight || noBottom < yesTop || noTop > yesBottom)
 
-      // Also check if new position is too close to current mouse position
       let tooCloseToMouse = false
       if (currentMouseX !== undefined && currentMouseY !== undefined) {
         const newCenterX = newX + noWidth / 2
         const newCenterY = newY + noHeight / 2
-        const mouseRelX = currentMouseX - container.left
-        const mouseRelY = currentMouseY - container.top
-        const distToMouse = Math.sqrt(
+        const mouseRelX = currentMouseX - contentRect.left
+        const mouseRelY = currentMouseY - contentRect.top
+        const dist = Math.sqrt(
           Math.pow(newCenterX - mouseRelX, 2) + Math.pow(newCenterY - mouseRelY, 2)
         )
-        tooCloseToMouse = distToMouse < FLEE_DISTANCE + 50
+        tooCloseToMouse = dist < 100
       }
 
       if (!overlapsYes && !tooCloseToMouse) break
     } while (attempts < 100)
 
-    // Final clamp to ensure button stays on screen
     newX = Math.max(minX, Math.min(maxX, newX))
     newY = Math.max(minY, Math.min(maxY, newY))
-
     return { x: newX, y: newY }
-  }, [noButtonPos, FLEE_DISTANCE])
+  }, [noButtonPos])
 
-  // Track mouse proximity to No button
-  useEffect(() => {
-    if (yesClicked) return
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!noButtonRef.current || !containerRef.current) return
-
-      // Throttle to avoid too many updates
-      const now = Date.now()
-      if (now - lastMoveTime.current < 50) return
-
-      const noRect = noButtonRef.current.getBoundingClientRect()
-      const buttonCenterX = noRect.left + noRect.width / 2
-      const buttonCenterY = noRect.top + noRect.height / 2
-
-      const distance = Math.sqrt(
-        Math.pow(e.clientX - buttonCenterX, 2) + Math.pow(e.clientY - buttonCenterY, 2)
-      )
-
-      if (distance < FLEE_DISTANCE) {
-        lastMoveTime.current = now
-        setNoAttempts(prev => prev + 1)
-        setNoButtonPos(getRandomPosition(e.clientX, e.clientY))
-      }
-    }
-
-    window.addEventListener('mousemove', handleMouseMove)
-    return () => window.removeEventListener('mousemove', handleMouseMove)
-  }, [yesClicked, getRandomPosition, FLEE_DISTANCE])
+  const handleNoHover = useCallback(
+    (e: React.MouseEvent) => {
+      if (yesClicked) return
+      setNoAttempts(prev => prev + 1)
+      setNoButtonPos(getRandomPosition(e.clientX, e.clientY))
+    },
+    [yesClicked, getRandomPosition]
+  )
 
   const handleYesClick = () => {
     setYesClicked(true)
@@ -336,8 +307,8 @@ function App() {
         />
       ))}
 
-      {/* Main content */}
-      <div className="content">
+      {/* Main content (white card container) */}
+      <div className="content" ref={contentRef}>
         <div className="envelope">
           <div className="envelope-flap"></div>
           <div className="letter">
@@ -360,7 +331,7 @@ function App() {
           </div>
         </div>
 
-        {/* Runaway No button */}
+        {/* Runaway No button - moves only within white card, on hover */}
         <button
           ref={noButtonRef}
           className="btn btn-no"
@@ -371,6 +342,7 @@ function App() {
             transition: 'all 0.25s cubic-bezier(0.68, -0.55, 0.265, 1.55)',
             opacity: initialized ? 1 : 0,
           }}
+          onMouseEnter={handleNoHover}
           onTouchStart={() => {
             setNoAttempts(prev => prev + 1)
             setNoButtonPos(getRandomPosition())
