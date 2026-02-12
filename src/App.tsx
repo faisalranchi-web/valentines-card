@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react'
 import './App.css'
 
-const VALENTINE_NAME = import.meta.env.VITE_VALENTINE_NAME || ' Yashmita '
+const VALENTINE_NAME = import.meta.env.VITE_VALENTINE_NAME || ' Yashmi '
 const LANGUAGE = import.meta.env.VITE_LANGUAGE || 'EN'
 
 const translations = {
